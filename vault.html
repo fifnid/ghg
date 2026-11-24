@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>.</title>
+<style>
+:root { color-scheme: dark; }
+html, body { margin: 0; background: #0b0b0c; color: #e8e8ea; font-family: -apple-system, system-ui, sans-serif; }
+body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
+body.open { align-items: flex-start; padding-top: 24px; }
+.box { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+body.open .box { max-width: 480px; }
+input, textarea { font-size: 16px; padding: 14px 16px; border-radius: 12px; border: 1px solid #2a2a2e; background: #151517; color: inherit; outline: none; width: 100%; box-sizing: border-box; }
+input#pass { text-align: center; }
+input:focus, textarea:focus { border-color: #4a4a52; }
+textarea { height: 110px; font-family: ui-monospace, monospace; font-size: 12px; word-break: break-all; }
+button { font-size: 16px; padding: 14px 16px; border-radius: 12px; border: 0; background: #2b6cff; color: #fff; cursor: pointer; }
+button:disabled { opacity: .55; }
+button.small { font-size: 14px; padding: 8px 12px; border-radius: 10px; background: #26262a; color: #e8e8ea; }
+.err { min-height: 18px; font-size: 13px; color: #ff6b6b; text-align: center; }
+.hidden { display: none; }
+details { color: #9a9aa2; font-size: 14px; }
+summary { cursor: pointer; text-align: center; padding: 4px 0; }
+details .inner { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.count { color: #9a9aa2; font-size: 14px; }
+.item { background: #151517; border: 1px solid #2a2a2e; border-radius: 12px; padding: 14px; }
+.svc { font-weight: 600; font-size: 16px; word-break: break-word; }
+.lg { color: #9a9aa2; font-size: 13px; margin-top: 2px; word-break: break-all; }
+.pwtxt { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #0b0b0c; border: 1px solid #2a2a2e; font-family: ui-monospace, monospace; font-size: 15px; word-break: break-all; }
+.pwbtns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.nojs { padding: 12px; border-radius: 10px; background: #3a1620; color: #ffd5db; font-size: 14px; max-width: 320px; }
+</style>
+</head>
+<body>
+<noscript><div class="nojs">JavaScript выключен, хранилище не откроется. Открой файл в обычном браузере (Safari, Chrome), а не во встроенном просмотре мессенджера или файлов.</div></noscript>
+<div class="box" id="box">
+  <div id="lockCard" class="box" style="max-width:none">
+    <input id="pass" type="password" autocomplete="current-password" autocapitalize="off" aria-label="password" autofocus>
+    <button id="unlock" type="button">Открыть</button>
+    <div class="err" id="msg"></div>
+  </div>
+
+  <details id="pasteCard">
+    <summary>Открыть по коду</summary>
+    <div class="inner">
+      <textarea id="pasteCode" aria-label="код хранилища"></textarea>
+      <input id="fileIn" type="file" accept=".json,application/json" aria-label="файл vault.json">
+    </div>
+  </details>
+
+  <div id="list" class="hidden">
+    <div class="top"><span class="count" id="count"></span><button class="small" id="lock" type="button">Закрыть</button></div>
+    <div id="items" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div>
+  </div>
+</div>
+
+<script>
+const DATA = {"v":1,"kdf":"PBKDF2-SHA256","cipher":"AES-256-GCM","iter":1000000,"salt":"j1Mpcmy28I9ptnC+zqBcEQ==","iv":"66KOK5lOtIEC/lrL","ct":"opAPRH0vddDbk//E1CHZVyXPetqrEZKZ6hU3Ihnto5laIF6EMOFO4l5rzq4PbW/8BQCcG5sPA7BlDCX3In/nmzrcRaRIlutIPSjYFrQHzU80/WOeBKqxxfmPuoDM7dWMXroYC458Yn206XNpRKLP1ZBFhnHD55E5IsgLE1WhspYJr4XJ8DC9gMSonIbbaOnKymzqZnoFz9QBFbSNlkA9DftLjmExG7Urb4P1+4yukjDH9lSnd5blOfXYNpnp8GKI/knrkltkym+YdlePd5fwQaxamoxJtmXzCys4r2UgIupPLGG2c5+594qGPf+FLMACgyZaZA/NxMVw04ZdBJRDJhfGcj8GxCte7F9STOOtRHSDMYlWmFC+t+Ihngcsmrn6uZnpgewfeKN6ok8iig3U4IAZA+pw7o+IqS4ZTEqP4dZE5fHD03XgHRE73W608fJwvhktISH16SE80cu2n+oWGSn4EWNEHVBVCGXW5hKy7/FelLeILiZrC6B+iTs8l+f6Z5ZGAzdsrMGTfwrChNSBE3ctUSkaCCOnTXaVeMwT0fXQBryG8+iytYIVkUkrDiQxsLm6JUL0qfnKLcUrZJAPz0j3ASeyvR5cKyBzDXs225HZmc439KjnHcdPpooV33eg+5M7A4lvwvS/pdTX1fQ7+MMPKrus3EZvuRKycuA2g73kWuXYIWULJDblMmXoS1ysYGkvQV0gstEc1c3mng/ZAP8KCej2jP9x5b6B5ouuKRhHuEyC8EmsBaUVuWcr5end13T0HMa5o4MGNVgLNcs4w4AnsnR5ufJl5fJk3HN+fRmS7QEBVIC3TMPQU5pQ8Sy1egFqek2KSBcBrdUYaNITUD4Mo+ksWsv0jlbSp5iRsHmjtNoUXJTC+nh7+nbZY26P18+rnAks10pWnFjf/FGUCx87GhB9qpdtYqh2zEz6GNHdVImDc9wbWUKWAttn6DhbElNp1Eh1H3pKJ76t39w5praj2hosUHPZkopLRTSLgdN/0uNvZcx/pCggR7Zda5jEtpEZVeXyQSlPDeeFog93f5t22KhGbTSFICzoUgbWcjIxXklM9qZYrjKSzcC5Ogni29oveFyIXickMVNrkJESBEpJaSReaD9vz99bJ2mh59KOfCej6ZGOUXZbiyx/IC8gX5n+RINEdTyWNiHOCdHvr5DKuet+AwMpdJrufZfSHqAn0JGS8C3tWf5zZECj1tgWY4QdUFSdlhXuE8zTK1ZsfbnHVyDCqrq5bo50G4BrMYwlVhyGrNGo3legryLqx99BTe65VXPfEeqn+oZ3+6DnYkrA5DJTgfacdlLIYFnPjJsS4QpYEXd3O0NGTAH59fpzD8HJk8u9R3wmVtqGXE7EeuTRKevq6NKWSGXY+NyB/S0="};
+const $ = id => document.getElementById(id);
+//#viewer-crypto-start
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decryptVault(blob, pass) {
+  const enc = new TextEncoder();
+  const km = await crypto.subtle.importKey('raw', enc.encode(pass.normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    {name: 'PBKDF2', salt: b64d(blob.salt), iterations: blob.iter, hash: 'SHA-256'},
+    km, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt(
+    {name: 'AES-GCM', iv: b64d(blob.iv), additionalData: enc.encode('vault-v1')}, key, b64d(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+//#viewer-crypto-end
+let timer = null;
+
+function getBlob() {
+  if (DATA) return DATA;
+  const raw = $('pasteCode').value.trim();
+  if (!raw) throw new Error('Нет данных: вставь код или выбери файл vault.json');
+  const b = JSON.parse(raw);
+  if (!b || b.v !== 1 || !b.salt || !b.iv || !b.ct || !b.iter) throw new Error('Это не похоже на код хранилища');
+  return b;
+}
+
+function render(data) {
+  const box = $('items'); box.textContent = '';
+  data.items.forEach(it => {
+    const d = document.createElement('div'); d.className = 'item';
+    const s = document.createElement('div'); s.className = 'svc'; s.textContent = it.service || '(без названия)'; d.appendChild(s);
+    if (it.login) { const l = document.createElement('div'); l.className = 'lg'; l.textContent = it.login; d.appendChild(l); }
+    const t = document.createElement('div'); t.className = 'pwtxt'; t.textContent = '••••••••••'; d.appendChild(t);
+    const line = document.createElement('div'); line.className = 'pwbtns';
+    let shown = false;
+    const eye = document.createElement('button'); eye.className = 'small'; eye.textContent = 'Показать';
+    eye.onclick = () => { shown = !shown; t.textContent = shown ? it.password : '••••••••••'; eye.textContent = shown ? 'Скрыть' : 'Показать'; };
+    const cp = document.createElement('button'); cp.className = 'small'; cp.textContent = 'Копировать';
+    cp.onclick = async () => {
+      try { await navigator.clipboard.writeText(it.password); cp.textContent = 'Скопировано'; }
+      catch (e) { cp.textContent = 'Не вышло'; }
+      setTimeout(() => cp.textContent = 'Копировать', 1500);
+    };
+    line.append(eye, cp); d.appendChild(line); box.appendChild(d);
+  });
+  $('count').textContent = 'Записей: ' + data.items.length;
+  $('lockCard').classList.add('hidden'); $('pasteCard').classList.add('hidden'); $('list').classList.remove('hidden');
+  document.body.classList.add('open');
+  clearTimeout(timer); timer = setTimeout(lockUp, 5 * 60 * 1000);
+}
+
+function lockUp() {
+  clearTimeout(timer);
+  $('items').textContent = ''; $('pass').value = '';
+  $('list').classList.add('hidden'); $('lockCard').classList.remove('hidden');
+  if (!DATA) $('pasteCard').classList.remove('hidden');
+  document.body.classList.remove('open');
+  $('msg').textContent = '';
+}
+
+async function unlock() {
+  const msg = $('msg'); msg.textContent = '';
+  let blob;
+  try { blob = getBlob(); } catch (e) { msg.textContent = e.message; return; }
+  const btn = $('unlock'); btn.disabled = true; btn.textContent = 'Расшифровываю…';
+  try {
+    const data = await decryptVault(blob, $('pass').value);
+    render(data);
+  } catch (e) {
+    msg.textContent = 'Неверно'; $('pass').value = '';
+  } finally { btn.disabled = false; btn.textContent = 'Открыть'; }
+}
+
+if (DATA) $('pasteCard').classList.add('hidden');
+if (!window.crypto || !crypto.subtle) {
+  $('msg').textContent = 'Браузер не даёт расшифровать (нужен https или современный браузер). Открой файл в Safari или Chrome либо по https-ссылке.';
+  $('unlock').disabled = true;
+}
+$('unlock').onclick = unlock;
+$('pass').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
+$('lock').onclick = lockUp;
+$('fileIn').onchange = e => { const f = e.target.files[0]; if (f) f.text().then(t => { $('pasteCode').value = t; }); };
+</script>
+</body>
+</html>
